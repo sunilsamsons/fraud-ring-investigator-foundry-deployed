@@ -1,4 +1,4 @@
-# Fraud Ring Detector
+# Fraud Ring Investigator
 
 A GraphRAG chat for fraud investigators. It works on personal auto injury claims.
 
