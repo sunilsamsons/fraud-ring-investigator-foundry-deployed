@@ -4,6 +4,8 @@ A GraphRAG chat for fraud investigators. It works on personal auto injury claims
 
 The tool puts claims, people, phones, addresses, repair shops, clinics, law firms, lawsuits and the claim documents into one graph database. An investigator asks a question in plain English. A team of AI agents searches the graph and the documents, and gives a short answer with sources.
 
+The chat runs on your computer, or as a hosted agent on Microsoft Foundry (section 7).
+
 > **All data in this project is fake.** A program made every name, claim and document. No record is about a real person or a real company.
 
 > **The tool does not say that a person is guilty.** It shows possible links and unusual patterns. A human investigator must review each result.
@@ -18,11 +20,12 @@ The tool puts claims, people, phones, addresses, repair shops, clinics, law firm
 4. [What you need](#4-what-you-need)
 5. [Set up the project](#5-set-up-the-project)
 6. [Use the tool](#6-use-the-tool)
-7. [Run the tests](#7-run-the-tests)
-8. [The data in this repository](#8-the-data-in-this-repository)
-9. [Project layout](#9-project-layout)
-10. [Safety rules in the code](#10-safety-rules-in-the-code)
-11. [If you have a problem](#11-if-you-have-a-problem)
+7. [Host the chat on Microsoft Foundry](#7-host-the-chat-on-microsoft-foundry)
+8. [Run the tests](#8-run-the-tests)
+9. [The data in this repository](#9-the-data-in-this-repository)
+10. [Project layout](#10-project-layout)
+11. [Safety rules in the code](#11-safety-rules-in-the-code)
+12. [If you have a problem](#12-if-you-have-a-problem)
 
 ---
 
@@ -65,7 +68,9 @@ The backend (Phase 1) is complete. A web front end comes next.
 | Pipeline: tables, PDFs, scores, communities and graph map in Neo4j | Works |
 | Chat: planner, 5 search agents, answer writer (LangGraph) | Works, tested with a fake LLM |
 | 4 MCP servers with the tools of the agents | Works |
+| Hosted agent `fraud-investigator-agent` on Microsoft Foundry, graph in Neo4j AuraDB Free | Works, smoke test passed |
 | Test questions with the real LLM (build step 6) | Skipped for now |
+| Evaluations and continuous monitoring in Foundry | Not set up yet |
 
 ## 3. Words used in this README
 
@@ -81,14 +86,19 @@ The backend (Phase 1) is complete. A web front end comes next.
 | GraphRAG | Retrieval-augmented generation over a graph: the LLM answers from what it finds in the graph and the documents. | The answer to "Are there rings?" comes from the communities in the graph. |
 | Virtual environment | A folder that keeps the Python packages of one project apart from other projects. | The folder `.venv`. |
 | `.env` file | A private file that keeps passwords and keys. You do not share it. | `NEO4J_PASSWORD=...` |
+| Microsoft Foundry | The Azure service that runs AI models and AI agents. A **Foundry project** holds the model deployments and the agents. | The project has the model deployment `gpt-5.4-mini`. |
+| Hosted agent | An agent whose code runs in Foundry, not on your computer. Foundry gives it versions, logs and traces. | `fraud-investigator-agent`. |
+| azd | Azure Developer CLI. A command-line tool that sends the code to Foundry and starts the hosted agent. | `azd deploy`. |
+| Neo4j AuraDB | Neo4j in the cloud. The hosted agent cannot reach the Neo4j on your computer, so it uses AuraDB. | The free tier, AuraDB Free. |
 
 ## 4. What you need
 
 - A Mac, Linux or Windows computer.
 - **Python 3.14.** Other Python 3 versions can also work, but we tested only 3.14.
 - **Docker Desktop.** Neo4j runs in Docker.
-- **A Microsoft Foundry project with a gpt-5.4-mini deployment, and `az login`.** No API key. You need it for the chat and to make new LLM text. Each LLM call costs money. See [section 8](#8-the-data-in-this-repository).
+- **A Microsoft Foundry project with a gpt-5.4-mini deployment, and `az login`.** No API key. You need it for the chat and to make new LLM text. Each LLM call costs money. See [section 9](#9-the-data-in-this-repository).
 - About 3 GB of free disk space.
+- **Only to host the chat on Foundry (section 7):** the Azure CLI (`az`), azd with the `azure.ai.agents` extension, and a free Neo4j AuraDB database.
 
 ## 5. Set up the project
 
@@ -144,7 +154,7 @@ python main.py --help
 
 ### Make the fake data (optional)
 
-The data is already in the repository (section 8). Make it again only if you want to.
+The data is already in the repository (section 9). Make it again only if you want to.
 
 ```bash
 python main.py generate-data --tables
@@ -193,7 +203,105 @@ python debug_chat.py "Why is C-1088 High?"
 
 It uses the cheap model, so it costs about one cent.
 
-## 7. Run the tests
+## 7. Host the chat on Microsoft Foundry
+
+The same chat can run as a **hosted agent** on Microsoft Foundry. Foundry runs the code, gives each deploy a new version, and keeps the logs and traces.
+
+### How it works
+
+```
+Investigator -> Foundry hosted agent "fraud-investigator-agent"
+                  foundry_agent.py (one node, out of sight)
+                    -> src/workflow.py: planner -> 5 search agents -> answer writer
+                         -> 4 MCP servers -> Neo4j AuraDB Free (the graph)
+                         -> gpt-5.4-mini in the same Foundry project
+             <- only the final, checked reply
+```
+
+| File | What it does | Who made it |
+|------|--------------|-------------|
+| `foundry_agent.py` | The entry point. A wrapper LangGraph graph with one node. It runs the chat out of sight and returns only the final, checked reply. | We wrote it. |
+| `langgraph.json` | Tells the Foundry hosting package where the graph is (`./foundry_agent.py:graph`). | We wrote it. |
+| `azure.yaml` | The azd settings: the Foundry project, the agent name, the runtime (Python 3.13), the size (2 vCPU, 4 GiB) and the settings of the agent. | `azd ai agent init` made it. We changed the size and the settings. |
+| `.agentignore` | The files that `azd deploy` does not send to Foundry: `.env`, `.azure/`, tests and the large data folders. | We wrote it. |
+| `.azure/<env>/.env` | The azd environment: the endpoints, the agent version and the Neo4j values. **It is not in git.** | azd makes it. You add values with `azd env set`. |
+
+Why the wrapper graph? The hosting package shows the person every message that the hosted graph makes. That includes the notes of the planner and the tool results. Plain code checks only the reply of the answer writer, so only that reply may reach the person.
+
+### Step 1: Put the graph in Neo4j AuraDB
+
+The hosted agent cannot reach the Neo4j on your computer.
+
+1. Make a free database at [console.neo4j.io](https://console.neo4j.io). Keep the connection URI, the user name and the password.
+2. In `.env`, set `NEO4J_URI` (it starts with `neo4j+s://`), `NEO4J_USER` and `NEO4J_PASSWORD` to the AuraDB values.
+3. Load the graph into AuraDB. This is the same command as in section 6.
+   ```bash
+   python main.py build-graph
+   ```
+4. Make sure that the chat works with AuraDB on your computer: `python main.py chat`.
+
+### Step 2: Sign in and install the tools
+
+The same on macOS and Windows:
+
+```bash
+az login
+azd auth login
+azd extension install azure.ai.agents
+```
+
+### Step 3: Set the azd environment
+
+1. In `azure.yaml`, change `endpoint` under `aa-foundry-customcode` to the endpoint of your Foundry project.
+2. Make an azd environment and set the values. The same on macOS and Windows:
+   ```bash
+   azd env new fraud-ring-detector-dev
+   azd env set AZURE_AI_PROJECT_ENDPOINT "<your Foundry project endpoint>"
+   azd env set AZURE_AI_MODEL_DEPLOYMENT_NAME gpt-5.4-mini
+   azd env set NEO4J_URI "<your AuraDB URI>"
+   azd env set NEO4J_USER "<your AuraDB user>"
+   azd env set NEO4J_PASSWORD "<your AuraDB password>"
+   ```
+   azd keeps these values in `.azure/fraud-ring-detector-dev/.env`. This folder is in `.gitignore`.
+3. Make sure that the values are there: `azd env get-values`.
+
+### Step 4: Deploy
+
+```bash
+azd deploy fraud-investigator-agent
+```
+
+Foundry gets the code, installs `requirements.txt` (remote build) and starts the agent. Each deploy makes a new agent version. azd asks for each value that is missing.
+
+### Step 5: Give the agent identity a role
+
+Each hosted agent has its own identity in Entra ID. The agent uses it to call gpt-5.4-mini. Give it the role **Foundry User** on the Foundry resource and on the project.
+
+1. Get the principal ID of the agent identity: `azd env get-values`. Find `AGENT_FRAUD_INVESTIGATOR_AGENT_INSTANCE_IDENTITY_PRINCIPAL_ID`.
+2. Give the role. Do this two times: one time with the ID of the Foundry resource as the scope, and one time with the ID of the project.
+   ```bash
+   az role assignment create --assignee-object-id "<principal ID>" --assignee-principal-type ServicePrincipal --role "Foundry User" --scope "<resource or project ID>"
+   ```
+
+A new role can take 10 to 30 minutes to work. A new agent name gives a new identity, so do this step again after a rename.
+
+### Step 6: Ask the hosted agent a question
+
+```bash
+azd ai agent invoke fraud-investigator-agent --new-session "Are there any fraud rings?"
+```
+
+The first answer after a deploy is slow, because the agent must start (about 80 seconds in our test). Then the answers come faster.
+
+To see the logs of the agent:
+
+```bash
+azd ai agent monitor --tail 100
+```
+
+You can also open the agent in the Foundry portal (ai.azure.com). Select your project, then **Agents**, then `fraud-investigator-agent`. The portal shows the versions and the traces, and it has a playground for questions.
+
+## 8. Run the tests
 
 Start Neo4j first. Then run this command:
 
@@ -211,7 +319,7 @@ Some tests load data into a second, empty Neo4j (the scratch database). They are
 docker run -d --name fraud-ring-scratch-neo4j -p 7688:7687 -e NEO4J_AUTH=neo4j/scratch-test-password neo4j:5.26-community
 ```
 
-## 8. The data in this repository
+## 9. The data in this repository
 
 The `data/` folder is in the repository. You can use the project without making the data again.
 
@@ -225,16 +333,20 @@ The `data/` folder is in the repository. You can use the project without making 
 
 Each PDF page has this text at the bottom: **SYNTHETIC TEST DOCUMENT - NOT A REAL RECORD**.
 
-## 9. Project layout
+## 10. Project layout
 
 ```
 fraud-ring-investigator-foundry-deployed/
   main.py                 Reads the command. Calls one function.
   debug_chat.py           Runs one chat message and prints each step.
+  foundry_agent.py        The Foundry entry point. Returns only the final, checked reply.
+  langgraph.json          Points the Foundry hosting package to the graph in foundry_agent.py.
+  azure.yaml              The azd settings of the hosted agent.
+  .agentignore            The files that azd deploy does not send to Foundry.
   docker-compose.yml      Starts Neo4j.
   requirements.txt        Python packages.
   .env.example            Settings file with fake values. Copy it to .env.
-  data/                   Fake data (see section 8).
+  data/                   Fake data (see section 9).
   src/
     config.py             All settings: model names, folders, seed, limits.
     llm.py                Asks gpt-5.4-mini in Foundry. The pipeline saves each answer in the cache; the chat does not.
@@ -251,16 +363,18 @@ fraud-ring-investigator-foundry-deployed/
   tests/                  Automatic tests (pytest).
 ```
 
-## 10. Safety rules in the code
+## 11. Safety rules in the code
 
 - **Agents reach the data only through MCP tools.** Each agent has a fixed list of tools. Each tool checks its values and passes them to a fixed query as parameters. A test sends `MATCH (n) DETACH DELETE n` to every tool. Nothing runs, and the graph does not change.
 - **One agent writes its own queries, and they can only read.** The graph query agent writes Cypher. Plain code refuses write words and unknown procedures, Neo4j must confirm with `EXPLAIN` that the query only reads, and the query runs in a read-only session with a time limit and a row limit.
 - **Plain code checks every reply.** A reply that names a claim or a rule that no tool returned, or that uses a word like "guilty", is not shown.
 - **The score is plain code.** The LLM never decides points and never decides if a rule fires.
-- **Passwords and keys stay in `.env`.** The code never prints them.
+- **Passwords and keys stay in `.env`.** The code never prints them. `.agentignore` keeps `.env` and `.azure/` out of the Foundry deploy.
+- **The hosted agent shows only the final, checked reply.** `foundry_agent.py` keeps the notes of the planner and the tool results inside.
+- **No API keys for the LLM.** The chat signs in with Entra ID: `az login` on your computer, the agent identity on Foundry.
 - **Each pipeline LLM answer goes into the cache.** The same request does not cost money two times.
 
-## 11. If you have a problem
+## 12. If you have a problem
 
 | Problem | What to do |
 |---------|------------|
@@ -269,3 +383,7 @@ fraud-ring-investigator-foundry-deployed/
 | `FOUNDRY_PROJECT_ENDPOINT is empty` | Put the endpoint of your Foundry project in `.env`, then run `az login`. |
 | `data/tables/claims.csv is missing` | Run `python main.py generate-data --tables`. |
 | `ModuleNotFoundError` | Start the virtual environment: `source .venv/bin/activate`. |
+| The hosted agent says that it has no permission to call the model | Give the agent identity the role Foundry User on the resource and on the project (section 7, step 5). Wait 10 to 30 minutes. |
+| The hosted agent cannot reach Neo4j | AuraDB Free pauses after some days without use. Resume it at console.neo4j.io. Make sure that `NEO4J_URI` in the azd environment starts with `neo4j+s://`. |
+| `azd ai agent delete` says that no service has the name | azd finds only the agents in `azure.yaml`. Delete an old agent in the Foundry portal. |
+| The first answer takes more than 1 minute | This is normal after a deploy. The agent must start first. |
