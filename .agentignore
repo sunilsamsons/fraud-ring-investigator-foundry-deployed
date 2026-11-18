@@ -1,0 +1,22 @@
+# Files that `azd deploy` does NOT upload to Foundry. Same format as .gitignore.
+# The hosted agent needs only the code (src/, foundry_agent.py, langgraph.json, requirements.txt)
+# and data/graph_map.json. The graph itself is in Neo4j AuraDB.
+
+# Secrets and local tools
+.env
+.venv/
+.git/
+.azure/
+.claude/
+__pycache__/
+.pytest_cache/
+
+# Not needed to answer questions
+tests/
+debug_chat.py
+*.html
+data/cache/
+data/pdfs/
+data/tables/
+data/evaluation/
+data/ground_truth.json

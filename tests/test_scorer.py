@@ -168,9 +168,9 @@ def test_too_many_tool_rounds_stop_the_agent(model):
 
 
 def test_an_llm_failure_becomes_findings_not_a_crash(model):
-    model.script = [RuntimeError("Cannot reach the Anthropic API.")]
+    model.script = [RuntimeError("Cannot reach the model API.")]
     findings = findings_of(scorer_module.scorer(planner_asks("x")))
-    assert "could not work: Cannot reach the Anthropic API." in findings["findings"]
+    assert "could not work: Cannot reach the model API." in findings["findings"]
 
 
 # --- call_mcp_tool ---

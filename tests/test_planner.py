@@ -93,9 +93,9 @@ def test_the_planner_stops_after_too_many_agent_calls(model):
 
 
 def test_an_llm_failure_becomes_a_note_not_a_crash(model):
-    model.answer = RuntimeError("Cannot reach the Anthropic API.")
+    model.answer = RuntimeError("Cannot reach the model API.")
     result = planner.planner({"messages": [HumanMessage("Hi")]})
-    assert "Cannot reach the Anthropic API." in result["messages"][0].text
+    assert "Cannot reach the model API." in result["messages"][0].text
 
 
 def test_messages_of_this_turn_start_after_the_last_question():

@@ -5,7 +5,7 @@ The order matters, because each step needs the nodes of the step before:
 Step 0, the tables, is load_tables_into_graph.py. Run it first.
 
 Cost: steps 3 and 4 call the LLM once for each PDF page. Every answer is saved in data/cache/, so a page that
-was read before costs nothing. A page that is new costs money and needs ANTHROPIC_API_KEY. Test with a few
+was read before costs nothing. A page that is new costs money and needs FOUNDRY_PROJECT_ENDPOINT. Test with a few
 claims first (CLAUDE.md, section 7).
 
 Run it for some claims:  .venv/bin/python -m src.data_loading.load_pdfs_into_graph C-1088 C-1089

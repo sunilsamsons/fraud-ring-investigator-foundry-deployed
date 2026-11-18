@@ -335,7 +335,7 @@ def test_the_saved_llm_answers_are_found_so_a_rebuild_costs_nothing(monkeypatch)
     # the prompts and the cache keys still match the saved answers, and building the graph again is free.
     from src.data_loading.read_pdf_pages import read_pdf_pages
 
-    monkeypatch.setattr(config, "ANTHROPIC_API_KEY", "")
+    monkeypatch.setattr(config, "FOUNDRY_PROJECT_ENDPOINT", "")
     file_path = config.PDFS_DIR / "C-1088" / "C-1088_fnol.pdf"
     pages = read_pdf_pages(file_path)
     for page in pages:

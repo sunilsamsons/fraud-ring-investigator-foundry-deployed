@@ -276,7 +276,7 @@ def test_the_new_pdfs_equal_the_committed_pdfs_without_any_llm_call(
     new_data_dir, tmp_path, monkeypatch
 ):
     monkeypatch.setattr(
-        config, "ANTHROPIC_API_KEY", ""
+        config, "FOUNDRY_PROJECT_ENDPOINT", ""
     )  # a missing saved answer now raises an error
     conflict_claim = read_rows(config.PDFS_DIR / "planted_conflicts.csv")[0]["claim_id"]
     lawsuit_claim = read_rows(config.TABLES_DIR / "lawsuits.csv")[0]["claim_id"]
@@ -312,7 +312,7 @@ def test_the_new_pdfs_equal_the_committed_pdfs_without_any_llm_call(
 
 
 def test_every_page_has_the_footer_from_the_config(new_data_dir, tmp_path, monkeypatch):
-    monkeypatch.setattr(config, "ANTHROPIC_API_KEY", "")
+    monkeypatch.setattr(config, "FOUNDRY_PROJECT_ENDPOINT", "")
     new_pdfs.generate_pdfs(
         config.RANDOM_SEED,
         new_data_dir / "tables",

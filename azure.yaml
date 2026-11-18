@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+infra:
+    provider: microsoft.foundry
+name: fraud-ring-detector
+services:
+    # The existing Foundry project. It already has the model deployment gpt-5.4-mini.
+    aa-foundry-customcode:
+        endpoint: https://foundrydemoaa.services.ai.azure.com/api/projects/AA-Foundry-CustomCode
+        host: azure.ai.project
+    fraud-investigator-agent:
+        host: azure.ai.agent
+        kind: hosted
+        name: fraud-investigator-agent
+        language: python
+        project: .
+        # Local run (azd ai agent run). The same command as the entry point below.
+        startupCommand: python -m langchain_azure_ai.agents.hosting.run --protocol responses
+        # Foundry installs requirements.txt and starts the hosting server. It reads langgraph.json.
+        codeConfiguration:
+            dependencyResolution: remote_build
+            entryPoint: -m langchain_azure_ai.agents.hosting.run --protocol responses
+            runtime: python_3_13
+        # 2 vCPU / 4 GiB: the agent runs the embedding model and starts 4 MCP servers.
+        container:
+            resources:
+                cpu: "2"
+                memory: 4Gi
+        # Values come from the azd environment (.azure/<env>/.env, not in git).
+        # The platform sets FOUNDRY_PROJECT_ENDPOINT itself.
+        # NEO4J_PASSWORD is a plain setting of the agent. Good enough for the sandbox. Use Key Vault later.
+        env:
+            AZURE_AI_MODEL_DEPLOYMENT_NAME: ${AZURE_AI_MODEL_DEPLOYMENT_NAME}
+            NEO4J_URI: ${NEO4J_URI}
+            NEO4J_USER: ${NEO4J_USER}
+            NEO4J_PASSWORD: ${NEO4J_PASSWORD}
+            PYTHONNOUSERSITE: "1"
+        protocols:
+            - protocol: responses
+              version: 2.0.0
+        uses:
+            - aa-foundry-customcode

@@ -56,4 +56,8 @@ def search_all_documents(topic: str) -> dict[str, Any]:
 
 
 if __name__ == "__main__":
+    # Import PyTorch and SciPy now, on the main thread. The server runs each tool in a worker thread.
+    # On Windows, the first import of their DLLs in a worker thread stops forever (deadlock).
+    import sentence_transformers  # noqa: F401
+
     server.run()  # the default transport is stdio

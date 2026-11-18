@@ -208,7 +208,7 @@
   },
   {
    "label": "ScoreSnapshot",
-   "count": 817,
+   "count": 500,
    "properties": [
     "as_of_date",
     "as_score",
@@ -220,7 +220,6 @@
     "ct_score",
     "fired_rule_ids",
     "fired_rules_json",
-    "is_peak",
     "nl_score",
     "snapshot_id",
     "total_score"
@@ -331,7 +330,7 @@
    "from_label": "Claim",
    "type": "HAS_SCORE",
    "to_label": "ScoreSnapshot",
-   "count": 817,
+   "count": 500,
    "properties": []
   },
   {

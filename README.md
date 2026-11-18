@@ -75,7 +75,7 @@ The backend (Phase 1) is complete. A web front end comes next.
 | Neo4j | The graph database that this project uses. | You open it in a web browser at `http://localhost:7474`. |
 | Cypher | The query language of Neo4j. | `MATCH (c:Claim) RETURN count(c)` counts the claims. |
 | Docker | A program that runs other programs in a closed box (a **container**). | Docker runs Neo4j, so you do not install Neo4j yourself. |
-| LLM | Large language model. An AI that reads and writes text. This project uses Anthropic Claude. | The LLM wrote the free text in the fake PDFs. |
+| LLM | Large language model. An AI that reads and writes text. This project uses gpt-5.4-mini in Microsoft Foundry. | The LLM wrote the free text in the fake PDFs. |
 | Agent | A part of the program that uses an LLM to decide what to do next. Plain code does the work. | The planner chooses which search agent gets a question. |
 | MCP | Model Context Protocol: a standard way to offer tools to an AI program. Each MCP server is a small program with a fixed list of tools. | The scorer agent calls the tool `get_claim_score` on the claim records server. |
 | GraphRAG | Retrieval-augmented generation over a graph: the LLM answers from what it finds in the graph and the documents. | The answer to "Are there rings?" comes from the communities in the graph. |
@@ -87,7 +87,7 @@ The backend (Phase 1) is complete. A web front end comes next.
 - A Mac, Linux or Windows computer.
 - **Python 3.14.** Other Python 3 versions can also work, but we tested only 3.14.
 - **Docker Desktop.** Neo4j runs in Docker.
-- **An Anthropic API key.** You need it only to make new LLM text. Each LLM call costs money. See [section 8](#8-the-data-in-this-repository).
+- **A Microsoft Foundry project with a gpt-5.4-mini deployment, and `az login`.** No API key. You need it for the chat and to make new LLM text. Each LLM call costs money. See [section 8](#8-the-data-in-this-repository).
 - About 3 GB of free disk space.
 
 ## 5. Set up the project
@@ -96,8 +96,8 @@ Do the steps that follow one time.
 
 1. Get the code.
    ```bash
-   git clone https://github.com/sunilsamsonsuresh/fraud-ring-detector.git
-   cd fraud-ring-detector
+   git clone https://github.com/sunilsamsons/fraud-ring-investigator-foundry-deployed.git
+   cd fraud-ring-investigator-foundry-deployed
    ```
 2. Make a virtual environment.
    ```bash
@@ -119,7 +119,7 @@ Do the steps that follow one time.
    ```
 6. Open `.env` in a text editor. Change these two values:
    - `NEO4J_PASSWORD`: write a new password. Use 8 characters or more.
-   - `ANTHROPIC_API_KEY`: write your own key. If you do not have a key, keep the fake value.
+   - `FOUNDRY_PROJECT_ENDPOINT`: the endpoint of your Foundry project. Then run `az login`.
 
    **Do not share `.env`. Do not commit it to git.** The `.gitignore` file keeps it out of git.
 7. Start Neo4j.
@@ -228,7 +228,7 @@ Each PDF page has this text at the bottom: **SYNTHETIC TEST DOCUMENT - NOT A REA
 ## 9. Project layout
 
 ```
-fraud-ring-detector/
+fraud-ring-investigator-foundry-deployed/
   main.py                 Reads the command. Calls one function.
   debug_chat.py           Runs one chat message and prints each step.
   docker-compose.yml      Starts Neo4j.
@@ -237,7 +237,7 @@ fraud-ring-detector/
   data/                   Fake data (see section 8).
   src/
     config.py             All settings: model names, folders, seed, limits.
-    llm.py                Asks Claude. The pipeline saves each answer in the cache; the chat does not.
+    llm.py                Asks gpt-5.4-mini in Foundry. The pipeline saves each answer in the cache; the chat does not.
     state.py              The shared state of the chat: the messages.
     workflow.py           The LangGraph chat graph: planner -> search agents -> answer writer.
     agents/               The planner, the 5 search agents and the answer writer.
@@ -266,6 +266,6 @@ fraud-ring-detector/
 |---------|------------|
 | `Cannot reach Neo4j at bolt://localhost:7687` | Start Neo4j with `docker compose up -d`. Wait 20 seconds. Try again. |
 | `Neo4j rejected the user name or password` | Make sure that `NEO4J_PASSWORD` in `.env` is the same as the password when you first started Neo4j. If you changed it, the old password is still in the Docker volume. |
-| `ANTHROPIC_API_KEY is empty` | Put your key in `.env`. |
+| `FOUNDRY_PROJECT_ENDPOINT is empty` | Put the endpoint of your Foundry project in `.env`, then run `az login`. |
 | `data/tables/claims.csv is missing` | Run `python main.py generate-data --tables`. |
 | `ModuleNotFoundError` | Start the virtual environment: `source .venv/bin/activate`. |

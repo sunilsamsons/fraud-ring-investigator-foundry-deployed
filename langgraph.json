@@ -1,0 +1,8 @@
+{
+  "$schema": "https://langgra.ph/schema.json",
+  "dependencies": ["."],
+  "graphs": {
+    "fraud_investigator": "./foundry_agent.py:graph"
+  },
+  "env": ".env"
+}

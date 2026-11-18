@@ -35,12 +35,17 @@ PDF_FOOTER_TEXT = "SYNTHETIC TEST DOCUMENT - NOT A REAL RECORD"
 CHUNK_MAX_WORDS = 150
 CHUNK_OVERLAP_WORDS = 30
 
-# --- LLM (Anthropic Claude) ---
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
-CHEAP_MODEL_NAME = "claude-haiku-5-5"  # data pipeline only: reads PDF pages (entities and findings). Cached.
-STRONG_MODEL_NAME = (
-    "claude-opus-5-5"  # the chat: router, specialist agents, report writer. Not cached.
-)
+# --- LLM ---
+# Every LLM call goes to ONE OpenAI model in Microsoft Foundry. This is the name of the model DEPLOYMENT in the
+# Foundry resource. On Foundry, azure.yaml sets AZURE_AI_MODEL_DEPLOYMENT_NAME.
+# The sign-in is Microsoft Entra ID (az login here, the agent's managed identity on Foundry). No API key.
+MODEL_DEPLOYMENT_NAME = os.getenv("AZURE_AI_MODEL_DEPLOYMENT_NAME", "gpt-5.4-mini")
+# The data pipeline: writes the fake documents, reads PDF pages (entities and findings). Cached.
+CHEAP_MODEL_NAME = MODEL_DEPLOYMENT_NAME
+# The chat: router, specialist agents, report writer. Not cached.
+STRONG_MODEL_NAME = MODEL_DEPLOYMENT_NAME
+# The Foundry project. On Foundry, the platform sets this value. On this computer, put it in .env.
+FOUNDRY_PROJECT_ENDPOINT = os.getenv("FOUNDRY_PROJECT_ENDPOINT", "")
 
 # --- Embeddings ---
 # The local model that turns text into numbers. The size must equal the size of the vector index

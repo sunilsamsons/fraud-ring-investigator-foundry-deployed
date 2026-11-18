@@ -127,9 +127,9 @@ def test_a_claim_id_the_person_wrote_is_allowed(model):
 
 
 def test_an_llm_failure_becomes_a_reply_not_a_crash(model):
-    model.answer = RuntimeError("Cannot reach the Anthropic API.")
+    model.answer = RuntimeError("Cannot reach the model API.")
     text = answer_writer.answer_writer({"messages": conversation()})["messages"][0].text
-    assert "Cannot reach the Anthropic API." in text
+    assert "Cannot reach the model API." in text
 
 
 def test_sources_have_no_duplicates_and_include_passages():

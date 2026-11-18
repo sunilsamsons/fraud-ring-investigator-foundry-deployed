@@ -72,7 +72,7 @@ def live():
 
 @pytest.fixture(autouse=True)
 def no_llm_calls(monkeypatch):
-    monkeypatch.setattr(config, "ANTHROPIC_API_KEY", "")
+    monkeypatch.setattr(config, "FOUNDRY_PROJECT_ENDPOINT", "")
 
 
 def properties_of(driver, label):

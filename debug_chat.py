@@ -2,11 +2,11 @@
 
 Run:  .venv/bin/python debug_chat.py                          (asks the QUESTIONS below)
       .venv/bin/python debug_chat.py "Why is C-1088 High?"    (asks your question)
-Needs: Neo4j running and ANTHROPIC_API_KEY in .env.
+Needs: Neo4j, FOUNDRY_PROJECT_ENDPOINT in .env, and az login.
 
-It is the same chat as `python main.py chat`, with two differences:
-- It uses the cheap model, so one question costs about one cent.
+It is the same chat as `python main.py chat`, with one difference:
 - After each step, it prints which part of the chat ran and what that part added.
+The chat model (gpt-5.4-mini in Foundry) is already a low-cost model.
 """
 
 import json
@@ -24,7 +24,6 @@ QUESTIONS = [
     "Why is C-1088 High?",
     "What do its documents say about the treatment?",
 ]
-USE_CHEAP_MODEL = True  # False: the strong model of the real chat (costs more)
 
 
 def print_new_message(message):
@@ -60,9 +59,6 @@ def ask_question(graph, session, question):
 
 
 def main():
-    if USE_CHEAP_MODEL:
-        # Only for this script. The real chat always uses the strong model.
-        config.STRONG_MODEL_NAME = config.CHEAP_MODEL_NAME
     print("Model:", config.STRONG_MODEL_NAME)
 
     questions = QUESTIONS

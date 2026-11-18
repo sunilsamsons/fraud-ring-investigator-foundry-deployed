@@ -8,7 +8,6 @@ neo4j==6.4.1
 python-dotenv==1.2.4
 pytest==9.2.0
 faker==40.44.0
-langchain-anthropic==1.7.10
 reportlab==5.1.0
 pypdf==7.0.0
 langgraph==1.2.20
@@ -17,3 +16,10 @@ langgraph==1.2.20
 mcp==1.30.0
 langchain-mcp-adapters==0.3.2
 sentence-transformers==6.2.0
+# Microsoft Foundry hosting: the agent server and the LangGraph adapter (foundry_agent.py, langgraph.json).
+# pip 24 cannot read the metadata of this package. Use pip 25 or newer: python -m pip install -U pip
+langchain-azure-ai[hosting]==1.4.0
+# sentence-transformers needs PyTorch. On Linux (Foundry), the default PyTorch also installs GPU (CUDA)
+# packages of several GB. This line installs the CPU-only PyTorch on Linux. Windows and macOS do not change.
+# cp313 = Python 3.13, the Foundry runtime (python_3_13). Change both together.
+torch @ https://download.pytorch.org/whl/cpu/torch-2.15.0%2Bcpu-cp313-cp313-manylinux_2_28_x86_64.whl ; sys_platform == "linux" and platform_machine == "x86_64"
